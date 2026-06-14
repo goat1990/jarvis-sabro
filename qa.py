@@ -16,7 +16,7 @@ log = logging.getLogger("jarvis.qa")
 
 MAX_RETRIES = 3
 
-_SKIP_PERMISSIONS = os.getenv("JARVIS_SKIP_PERMISSIONS", "true").lower() not in ("0", "false", "no")
+_AUTO_MODE = os.getenv("JARVIS_AUTO_MODE", "true").lower() not in ("0", "false", "no")
 
 
 @dataclass
@@ -49,7 +49,7 @@ class QAAgent:
 
         try:
             cmd = ["claude", "-p", "--output-format", "text"]
-            if _SKIP_PERMISSIONS:
+            if _AUTO_MODE:
                 cmd.append("--dangerously-skip-permissions")
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -138,7 +138,7 @@ class QAAgent:
 
         try:
             cmd = ["claude", "-p", "--output-format", "text"]
-            if _SKIP_PERMISSIONS:
+            if _AUTO_MODE:
                 cmd.append("--dangerously-skip-permissions")
             process = await asyncio.create_subprocess_exec(
                 *cmd,

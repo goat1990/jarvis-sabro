@@ -66,7 +66,7 @@ FISH_VOICE_ID = os.getenv("FISH_VOICE_ID", "612b878b113047d9a770c069c8b4fdfe")  
 FISH_API_URL = "https://api.fish.audio/v1/tts"
 USER_NAME = os.getenv("USER_NAME", "sir")
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-_SKIP_PERMISSIONS = os.getenv("JARVIS_SKIP_PERMISSIONS", "true").lower() not in ("0", "false", "no")
+_AUTO_MODE = os.getenv("JARVIS_AUTO_MODE", "true").lower() not in ("0", "false", "no")
 
 DESKTOP_PATH = Path.home() / "Desktop"
 
@@ -466,7 +466,7 @@ class ClaudeTaskManager:
         prompt_file.write_text(task.prompt)
 
         # Open Terminal.app with claude running in the project directory
-        skip_flag = " --dangerously-skip-permissions" if _SKIP_PERMISSIONS else ""
+        skip_flag = " --dangerously-skip-permissions" if _AUTO_MODE else ""
         escaped_work_dir = applescript_escape(work_dir)
         applescript = f'''
         tell application "Terminal"
@@ -863,7 +863,7 @@ async def _execute_research(target: str, ws=None):
         log.info(f"Research started via claude -p in {path}")
 
         cmd = ["claude", "-p", "--output-format", "text"]
-        if _SKIP_PERMISSIONS:
+        if _AUTO_MODE:
             cmd.append("--dangerously-skip-permissions")
         process = await asyncio.create_subprocess_exec(
             *cmd,
@@ -1595,7 +1595,7 @@ def detect_action_fast(text: str) -> dict | None:
 # -- Action Handlers -------------------------------------------------------
 
 async def handle_open_terminal() -> str:
-    claude_cmd = "claude --dangerously-skip-permissions" if _SKIP_PERMISSIONS else "claude"
+    claude_cmd = "claude --dangerously-skip-permissions" if _AUTO_MODE else "claude"
     result = await open_terminal(claude_cmd)
     return result["confirmation"]
 
@@ -1614,7 +1614,7 @@ async def handle_build(target: str) -> str:
     prompt_file = Path(path) / ".jarvis_prompt.txt"
     prompt_file.write_text(target)
 
-    skip_flag = " --dangerously-skip-permissions" if _SKIP_PERMISSIONS else ""
+    skip_flag = " --dangerously-skip-permissions" if _AUTO_MODE else ""
     escaped_path = applescript_escape(path)
     script = (
         'tell application "Terminal"\n'
@@ -2602,7 +2602,7 @@ async def api_fix_self():
     jarvis_dir = str(Path(__file__).parent)
     # The work_session is per-WebSocket, so we set a flag that the handler picks up
     # For now, also open Terminal so user can see
-    skip_flag = " --dangerously-skip-permissions" if _SKIP_PERMISSIONS else ""
+    skip_flag = " --dangerously-skip-permissions" if _AUTO_MODE else ""
     escaped_jarvis_dir = applescript_escape(jarvis_dir)
     script = (
         'tell application "Terminal"\n'

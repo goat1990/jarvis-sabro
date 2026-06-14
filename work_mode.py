@@ -18,7 +18,7 @@ from pathlib import Path
 
 log = logging.getLogger("jarvis.work_mode")
 
-_SKIP_PERMISSIONS = os.getenv("JARVIS_SKIP_PERMISSIONS", "true").lower() not in ("0", "false", "no")
+_AUTO_MODE = os.getenv("JARVIS_AUTO_MODE", "true").lower() not in ("0", "false", "no")
 
 SESSION_FILE = Path(__file__).parent / "data" / "active_session.json"
 
@@ -69,7 +69,7 @@ class WorkSession:
             return "Claude CLI not found on this system."
 
         cmd = [claude_path, "-p", "--output-format", "text"]
-        if _SKIP_PERMISSIONS:
+        if _AUTO_MODE:
             cmd.append("--dangerously-skip-permissions")
 
         # Use --continue for subsequent messages to maintain context

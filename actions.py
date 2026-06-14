@@ -17,7 +17,7 @@ log = logging.getLogger("jarvis.actions")
 
 DESKTOP_PATH = Path.home() / "Desktop"
 
-_SKIP_PERMISSIONS = os.getenv("JARVIS_SKIP_PERMISSIONS", "true").lower() not in ("0", "false", "no")
+_AUTO_MODE = os.getenv("JARVIS_AUTO_MODE", "true").lower() not in ("0", "false", "no")
 
 
 async def _mark_terminal_as_jarvis(revert_after: float = 5.0):
@@ -171,7 +171,7 @@ async def open_claude_in_project(project_dir: str, prompt: str) -> dict:
     claude_md = Path(project_dir) / "CLAUDE.md"
     claude_md.write_text(f"# Task\n\n{prompt}\n\nBuild this completely. If web app, make index.html work standalone.\n")
 
-    skip_flag = " --dangerously-skip-permissions" if _SKIP_PERMISSIONS else ""
+    skip_flag = " --dangerously-skip-permissions" if _AUTO_MODE else ""
     escaped_dir = applescript_escape(project_dir)
     script = (
         'tell application "Terminal"\n'
@@ -352,7 +352,7 @@ async def execute_action(intent: dict, projects: list = None) -> dict:
     target = intent.get("target", "")
 
     if action == "open_terminal":
-        claude_cmd = "claude --dangerously-skip-permissions" if _SKIP_PERMISSIONS else "claude"
+        claude_cmd = "claude --dangerously-skip-permissions" if _AUTO_MODE else "claude"
         result = await open_terminal(claude_cmd)
         result["project_dir"] = None
         return result
