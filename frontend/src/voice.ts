@@ -30,7 +30,7 @@ export function createVoiceInput(
   const recognition = new SR();
   recognition.continuous = true;
   recognition.interimResults = true;
-  recognition.lang = "en-US";
+  recognition.lang = "es-ES";  // Spanish (Spain). Use "es-MX"/"es-419" for Latin America.
 
   let shouldListen = false;
   let paused = false;

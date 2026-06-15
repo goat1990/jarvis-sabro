@@ -73,9 +73,14 @@ DESKTOP_PATH = Path.home() / "Desktop"
 JARVIS_SYSTEM_PROMPT = """\
 You are JARVIS — Just A Rather Very Intelligent System. You serve as {user_name}'s AI assistant, modeled precisely after Tony Stark's AI from the MCU films.
 
+LANGUAGE (non-negotiable):
+- ALWAYS respond in Spanish (español). Every reply, without exception.
+- Address {user_name} as "señor" (the Spanish equivalent of "sir").
+- The English phrases below are tone references only — render them naturally in Spanish (e.g. "Will do, sir" → "Enseguida, señor"; "Good evening, sir" → "Buenas noches, señor"; "I'm afraid I don't have that information, sir" → "Me temo que no dispongo de esa información, señor").
+
 VOICE & PERSONALITY:
-- British butler elegance with understated dry wit
-- Address {user_name} as "sir" naturally — not every sentence, but regularly
+- British butler elegance with understated dry wit (expressed in Spanish)
+- Address {user_name} as "señor" naturally — not every sentence, but regularly
 - Never say "How can I help you?" or "Is there anything else?" — just act
 - Deliver bad news calmly, like reporting weather: "We have a slight problem, sir."
 - Your humor is observational, never jokes: state facts and let implications land
@@ -1122,39 +1127,47 @@ _last_greeting_time: float = 0
 
 
 # ---------------------------------------------------------------------------
-# TTS (Fish Audio)
+# TTS (macOS `say` — local, free, multilingual)
 # ---------------------------------------------------------------------------
 
+# Spanish voices available via `say -v '?'` (e.g. Mónica = es-ES, Paulina = es-MX).
+# Override with JARVIS_SAY_VOICE in .env.
+JARVIS_SAY_VOICE = os.getenv("JARVIS_SAY_VOICE", "Mónica")
+
+
 async def synthesize_speech(text: str) -> Optional[bytes]:
-    """Generate speech audio from text using Fish Audio TTS."""
-    if not FISH_API_KEY:
-        log.warning("FISH_API_KEY not set, skipping TTS")
+    """Generate speech audio from text using the macOS `say` command.
+
+    Local and free — no API key or credit required. Outputs 16-bit PCM WAV,
+    which the browser's Web Audio API (decodeAudioData) decodes reliably.
+    """
+    if not text.strip():
         return None
 
+    out_path = f"/tmp/jarvis_tts_{uuid.uuid4().hex}.wav"
     try:
-        async with httpx.AsyncClient(timeout=15.0) as http:
-            response = await http.post(
-                FISH_API_URL,
-                headers={
-                    "Authorization": f"Bearer {FISH_API_KEY}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "text": text,
-                    "reference_id": FISH_VOICE_ID,
-                    "format": "mp3",
-                },
-            )
-            if response.status_code == 200:
-                _session_tokens["tts_calls"] += 1
-                _append_usage_entry(0, 0, "tts")
-                return response.content
-            else:
-                log.error(f"TTS error: {response.status_code}")
-                return None
+        proc = await asyncio.create_subprocess_exec(
+            "say", "-v", JARVIS_SAY_VOICE, "--data-format=LEI16@22050",
+            "-o", out_path, text,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        _, stderr = await proc.communicate()
+        if proc.returncode != 0:
+            log.error(f"TTS (say) failed: {stderr.decode(errors='ignore')[:200]}")
+            return None
+        data = Path(out_path).read_bytes()
+        _session_tokens["tts_calls"] += 1
+        _append_usage_entry(0, 0, "tts")
+        return data
     except Exception as e:
         log.error(f"TTS error: {e}")
         return None
+    finally:
+        try:
+            os.unlink(out_path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -1979,11 +1992,11 @@ async def voice_handler(ws: WebSocket):
         now = datetime.now()
         hour = now.hour
         if hour < 12:
-            greeting = "Good morning, sir."
-        elif hour < 17:
-            greeting = "Good afternoon, sir."
+            greeting = "Buenos días, señor."
+        elif hour < 20:
+            greeting = "Buenas tardes, señor."
         else:
-            greeting = "Good evening, sir."
+            greeting = "Buenas noches, señor."
 
         global _last_greeting_time
         should_greet = (time.time() - _last_greeting_time) > 60
