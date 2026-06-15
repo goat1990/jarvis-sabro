@@ -39,3 +39,8 @@ desktop-overlay/node_modules/
 context/
 *.db-shm
 *.db-wal
+
+# JARVIS dev runtime
+logs/
+.jarvis_pids
+*.pem.bak
