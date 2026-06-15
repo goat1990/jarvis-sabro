@@ -48,7 +48,15 @@ const canvas = document.getElementById("orb-canvas") as HTMLCanvasElement;
 const orb = createOrb(canvas);
 
 const wsProto = window.location.protocol === "https:" ? "wss:" : "ws:";
-const WS_URL = `${wsProto}//${window.location.host}/ws/voice`;
+// In dev the frontend is served by Vite (port 5173) and the backend listens on
+// 8340. Connect the WebSocket straight to the backend — Vite's ws-proxy mangles
+// the browser's upgrade handshake (permessage-deflate) and rejects it with 400.
+// In production (frontend served by the backend itself) fall back to same-origin.
+const wsHost =
+  window.location.port === "5173"
+    ? `${window.location.hostname}:8340`
+    : window.location.host;
+const WS_URL = `${wsProto}//${wsHost}/ws/voice`;
 const socket = createSocket(WS_URL);
 
 const audioPlayer = createAudioPlayer();
